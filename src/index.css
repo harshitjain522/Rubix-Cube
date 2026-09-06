@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-stage: #1b1d21;
+  --color-stage-rule: #34383e;
+  --color-sheet: #edeeea;
+  --color-ink: #15171b;
+  --color-muted: #6a7078;
+  --color-rule: #c8cac5;
+
+  --font-sans: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-stage);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One focus treatment everywhere, legible on paper and on the stage. */
+:where(button, [tabindex], input, select, a):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@keyframes suspect {
+  0%,
+  100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.suspect {
+  box-shadow: inset 0 0 0 2px var(--color-ink);
+  animation: suspect 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suspect { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
