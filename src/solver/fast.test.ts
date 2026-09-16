@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import Cube from './cubejs'; // the shim, so its browser-only breakage is covered here
 import { SOLVED } from '../model/facelets';
-import { applyMoves, normalize, parse } from '../model/moves';
-import { scrambledState } from '../model/scramble';
+import { applyMoves, normalize, parse, scrambledState } from '../model/moves';
 
 describe('kociemba solver', () => {
   it('agrees with our move model on the facelet string it is handed', () => {

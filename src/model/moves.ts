@@ -1,104 +1,80 @@
-// Moves: type, parsing, notation, and the 18 facelet permutation tables.
+// Moves: type, parsing, notation, scrambles, and the 18 facelet permutations.
 
-import { FACELETS, FACES, ROTATE, faceletAt, inLayer, type Face } from './facelets';
+import { FACELETS, FACES, LAYER, ROTATE, SOLVED, faceletAt, type Face } from './facelets';
 
-export type Layer = Face;
 /** 1 = quarter clockwise, 2 = half, 3 = quarter counter-clockwise. */
 export type Amount = 1 | 2 | 3;
 export interface Move {
-  layer: Layer;
+  layer: Face;
   amount: Amount;
 }
 
 const SUFFIX = { 1: '', 2: '2', 3: "'" } as const;
 
-export function stringify(m: Move): string {
-  return m.layer + SUFFIX[m.amount];
-}
-export function stringifyAll(ms: readonly Move[]): string {
-  return ms.map(stringify).join(' ');
-}
-
-export function inverse(m: Move): Move {
-  return { layer: m.layer, amount: (4 - m.amount) as Amount };
-}
-export function invertAll(ms: readonly Move[]): Move[] {
-  return [...ms].reverse().map(inverse);
-}
+export const stringify = (m: Move) => m.layer + SUFFIX[m.amount];
+export const stringifyAll = (ms: readonly Move[]) => ms.map(stringify).join(' ');
+export const inverse = (m: Move): Move => ({ layer: m.layer, amount: (4 - m.amount) as Amount });
 
 export function parse(text: string): Move[] {
-  const out: Move[] = [];
-  for (const token of text.trim().split(/[\s,]+/).filter(Boolean)) {
+  return text.split(/[\s,]+/).filter(Boolean).map((token): Move => {
     const m = /^([URFDLB])(['’2]?)$/i.exec(token);
     if (!m) throw new Error(`Not a move: "${token}"`);
-    const layer = m[1].toUpperCase() as Layer;
-    const amount: Amount = m[2] === '2' ? 2 : m[2] ? 3 : 1;
-    out.push({ layer, amount });
-  }
-  return out;
+    return { layer: m[1].toUpperCase() as Face, amount: m[2] === '2' ? 2 : m[2] ? 3 : 1 };
+  });
 }
 
 /** Drop cancellations and merge repeats: R R' -> nothing, R R -> R2. */
 export function normalize(ms: readonly Move[]): Move[] {
   const out: Move[] = [];
+  // Adjacent entries in `out` never share a layer, so a cancellation only ever
+  // exposes a neighbour the next move is compared against anyway: one pass.
   for (const m of ms) {
-    const prev = out[out.length - 1];
-    if (prev && prev.layer === m.layer) {
-      const amount = (prev.amount + m.amount) % 4;
-      out.pop();
-      if (amount) out.push({ layer: m.layer, amount: amount as Amount });
+    const prev = out.at(-1);
+    if (prev?.layer !== m.layer) {
+      out.push(m);
       continue;
     }
-    out.push(m);
+    out.pop();
+    const amount = (prev.amount + m.amount) % 4;
+    if (amount) out.push({ layer: m.layer, amount: amount as Amount });
   }
-  // A cancellation can expose a new neighbouring pair; settle it.
-  return out.length === ms.length ? out : normalize(out);
+  return out;
 }
 
 // --- permutation tables ----------------------------------------------------
 
-/** PERM[layer][i] = index of the facelet that moves into slot i. */
-const QUARTER: Record<Face, number[]> = Object.fromEntries(
+/** PERMS[face][amount - 1][i] = the facelet whose sticker moves into slot i. */
+const PERMS = Object.fromEntries(
   FACES.map((face) => {
-    const perm = FACELETS.map((_, i) => i);
+    const q = FACELETS.map((_, i) => i);
+    const { axis, plane } = LAYER[face];
     FACELETS.forEach((f, i) => {
-      if (!inLayer(f.pos, face)) return;
-      perm[faceletAt(ROTATE[face](f.pos), ROTATE[face](f.normal))] = i;
+      if (f.pos[axis] === plane) q[faceletAt(ROTATE[face](f.pos), ROTATE[face](f.normal))] = i;
     });
-    return [face, perm];
+    const then = (p: number[]) => q.map((i) => p[i]);
+    const q2 = then(q);
+    return [face, [q, q2, then(q2)]];
   }),
-) as Record<Face, number[]>;
+) as Record<Face, number[][]>;
 
-function compose(a: number[], b: number[]): number[] {
-  return b.map((i) => a[i]);
-}
-
-const TABLE = new Map<string, number[]>();
-for (const face of FACES) {
-  let perm = QUARTER[face];
-  for (const amount of [1, 2, 3] as const) {
-    TABLE.set(face + amount, perm);
-    perm = compose(perm, QUARTER[face]);
-  }
-}
-
-/** perm[i] = the facelet whose sticker moves into slot i. Exported for tests. */
-export function permutationFor(m: Move): number[] {
-  return TABLE.get(m.layer + m.amount)!;
-}
+/** Exported for the 3D turn test. */
+export const permutationFor = (m: Move) => PERMS[m.layer][m.amount - 1];
 
 export function applyMove(facelets: string, m: Move): string {
-  const perm = permutationFor(m);
-  let out = '';
-  for (let i = 0; i < 54; i++) out += facelets[perm[i]];
-  return out;
+  return permutationFor(m).map((i) => facelets[i]).join('');
 }
 
 export function applyMoves(facelets: string, ms: readonly Move[]): string {
   return ms.reduce(applyMove, facelets);
 }
 
-/** Convenience for algorithm tables written as notation strings. */
-export function alg(text: string): Move[] {
-  return parse(text);
+/** A random scramble that never turns the same face twice in a row. */
+export function scrambledState(length = 25): { facelets: string; moves: Move[] } {
+  const moves: Move[] = [];
+  while (moves.length < length) {
+    const layer = FACES[Math.floor(Math.random() * 6)];
+    if (moves.at(-1)?.layer === layer) continue;
+    moves.push({ layer, amount: (1 + Math.floor(Math.random() * 3)) as Amount });
+  }
+  return { facelets: applyMoves(SOLVED, moves), moves };
 }

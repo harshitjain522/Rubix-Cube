@@ -2,7 +2,6 @@
 // gets a sentence written from where they are standing.
 
 import type { Move } from '../model/moves';
-import { stringify } from '../model/moves';
 
 const DIRECTION: Record<string, string> = {
   U1: 'turn the top layer to the left',
@@ -30,7 +29,7 @@ export function describe(move: Move): string {
 }
 
 /** How a screen reader should say the notation itself. */
-export function spell(move: Move): string {
+function spell(move: Move): string {
   const suffix = move.amount === 2 ? ' two' : move.amount === 3 ? ' prime' : '';
   return move.layer + suffix;
 }
@@ -41,5 +40,3 @@ export function announce(moves: readonly Move[], index: number): string {
   const move = moves[index];
   return `Move ${index + 1} of ${moves.length}. ${spell(move)}. ${describe(move)}.`;
 }
-
-export const notation = stringify;

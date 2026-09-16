@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SOLVED } from '../model/facelets';
-import { applyMoves, parse, stringifyAll } from '../model/moves';
-import { scrambledState } from '../model/scramble';
+import { applyMoves, parse, scrambledState, stringifyAll } from '../model/moves';
 import { solveBeginner } from './beginner';
 
 describe('algorithm sanity', () => {
@@ -47,7 +46,7 @@ describe('beginner solver', () => {
   }, 60_000);
 
   it('stays within a length a person will actually follow', () => {
-    const lengths = Array.from({ length: 40 }, () =>
+    const lengths = Array.from({ length: 200 }, () =>
       solveBeginner(scrambledState(25).facelets).reduce((n, s) => n + s.moves.length, 0),
     );
     const median = lengths.sort((a, b) => a - b)[lengths.length >> 1];

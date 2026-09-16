@@ -11,8 +11,9 @@ export type Face = (typeof FACES)[number];
 export const COLORS = ['W', 'R', 'G', 'Y', 'O', 'B'] as const;
 export type Color = (typeof COLORS)[number];
 
-/** A facelet index, 0..53. */
-export type FaceletIndex = number & { readonly __brand: 'facelet' };
+export const COLOR_NAME: Record<Color, string> = {
+  W: 'white', Y: 'yellow', R: 'red', O: 'orange', G: 'green', B: 'blue',
+};
 
 export type V3 = readonly [number, number, number];
 
@@ -43,45 +44,22 @@ const COL: Record<Face, V3> = {
   B: [-1, 0, 0],
 };
 
-export interface Facelet {
-  /** Which face this sticker lives on. */
-  face: Face;
-  /** Position of the cubie carrying it, components in {-1, 0, 1}. */
-  pos: V3;
-  /** Outward normal of the sticker. */
-  normal: V3;
-  row: number;
-  col: number;
-}
+const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const scale = (v: V3, k: number): V3 => [v[0] * k, v[1] * k, v[2] * k];
 
-function scale(v: V3, k: number): V3 {
-  return [v[0] * k, v[1] * k, v[2] * k];
-}
-function add(a: V3, b: V3): V3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-
-/** Geometry of all 54 stickers, in facelet-index order. */
-export const FACELETS: readonly Facelet[] = FACES.flatMap((face) =>
+/** Geometry of all 54 stickers, in facelet-index order: the cubie position
+ *  (components in {-1, 0, 1}) and the sticker's outward normal. */
+export const FACELETS: readonly { pos: V3; normal: V3 }[] = FACES.flatMap((face) =>
   [0, 1, 2].flatMap((row) =>
-    [0, 1, 2].map((col): Facelet => ({
-      face,
-      row,
-      col,
+    [0, 1, 2].map((col) => ({
       normal: NORMAL[face],
-      pos: add(
-        NORMAL[face],
-        add(scale(ROW[face], row - 1), scale(COL[face], col - 1)),
-      ),
+      pos: add(NORMAL[face], add(scale(ROW[face], row - 1), scale(COL[face], col - 1))),
     })),
   ),
 );
 
 const key = (pos: V3, normal: V3) => `${pos.join(',')}|${normal.join(',')}`;
-
-const BY_KEY = new Map<string, number>(
-  FACELETS.map((f, i) => [key(f.pos, f.normal), i]),
-);
+const BY_KEY = new Map(FACELETS.map((f, i) => [key(f.pos, f.normal), i]));
 
 /** Facelet index for a sticker at a given cubie position and outward normal. */
 export function faceletAt(pos: V3, normal: V3): number {
@@ -110,36 +88,28 @@ export const LAYER: Record<Face, { axis: 0 | 1 | 2; plane: 1 | -1 }> = {
   B: { axis: 2, plane: -1 },
 };
 
-export function inLayer(pos: V3, face: Face): boolean {
-  const { axis, plane } = LAYER[face];
-  return pos[axis] === plane;
-}
-
-export const CENTER: Record<Face, number> = { U: 4, R: 13, F: 22, D: 31, L: 40, B: 49 };
 export const CENTERS = [4, 13, 22, 31, 40, 49];
 
 export const SOLVED = FACES.map((f) => f.repeat(9)).join('');
 
 // --- piece tables (Kociemba's ordering) ------------------------------------
 
-export const CORNER_NAMES = ['URF', 'UFL', 'ULB', 'UBR', 'DFR', 'DLF', 'DBL', 'DRB'] as const;
-export const EDGE_NAMES = [
-  'UR', 'UF', 'UL', 'UB', 'DR', 'DF', 'DL', 'DB', 'FR', 'FL', 'BL', 'BR',
-] as const;
+export const CORNER_NAMES = ['URF', 'UFL', 'ULB', 'UBR', 'DFR', 'DLF', 'DBL', 'DRB'];
+export const EDGE_NAMES = ['UR', 'UF', 'UL', 'UB', 'DR', 'DF', 'DL', 'DB', 'FR', 'FL', 'BL', 'BR'];
 
 /** Facelet indices of the piece named by its faces, in the order given. */
 function pieceFacelets(name: string): number[] {
-  const faces = name.split('') as Face[];
+  const faces = [...name] as Face[];
   const pos = faces.reduce((p, f) => add(p, NORMAL[f]), [0, 0, 0] as V3);
   return faces.map((f) => faceletAt(pos, NORMAL[f]));
 }
 
-export const CORNER_FACELETS: readonly number[][] = CORNER_NAMES.map(pieceFacelets);
-export const EDGE_FACELETS: readonly number[][] = EDGE_NAMES.map(pieceFacelets);
+export const CORNER_FACELETS = CORNER_NAMES.map(pieceFacelets);
+export const EDGE_FACELETS = EDGE_NAMES.map(pieceFacelets);
 
 /** Solved-state colors of each piece, in the same slot order. */
-export const CORNER_COLORS = CORNER_FACELETS.map((fs) => fs.map((i) => SOLVED[i]));
-export const EDGE_COLORS = EDGE_FACELETS.map((fs) => fs.map((i) => SOLVED[i]));
+const CORNER_COLORS = CORNER_FACELETS.map((fs) => fs.map((i) => SOLVED[i]));
+const EDGE_COLORS = EDGE_FACELETS.map((fs) => fs.map((i) => SOLVED[i]));
 
 export interface CubieState {
   /** cp[slot] = which corner piece sits in that slot. */
@@ -151,8 +121,8 @@ export interface CubieState {
 }
 
 /**
- * Facelet string -> piece view. Returns null for the piece that can't be
- * identified, so validation can name it instead of throwing.
+ * Facelet string -> piece view. A piece that can't be identified gets -1 and is
+ * reported, so validation can name it instead of throwing.
  */
 export function toCubies(
   f: string,
@@ -165,24 +135,21 @@ export function toCubies(
     const fs = CORNER_FACELETS[i];
     let ori = 0;
     while (ori < 3 && f[fs[ori]] !== 'U' && f[fs[ori]] !== 'D') ori++;
-    if (ori === 3) { badCorner ??= i; cp.push(-1); co.push(0); continue; }
     const c2 = f[fs[(ori + 1) % 3]];
     const c3 = f[fs[(ori + 2) % 3]];
-    const j = CORNER_COLORS.findIndex((c) => c[1] === c2 && c[2] === c3);
-    if (j < 0) { badCorner ??= i; cp.push(-1); co.push(0); continue; }
+    const j = ori === 3 ? -1 : CORNER_COLORS.findIndex((c) => c[1] === c2 && c[2] === c3);
+    if (j < 0) badCorner ??= i;
     cp.push(j);
-    co.push(ori);
+    co.push(j < 0 ? 0 : ori);
   }
 
   for (let i = 0; i < 12; i++) {
     const [a, b] = EDGE_FACELETS[i].map((x) => f[x]);
     const j = EDGE_COLORS.findIndex((c) => c[0] === a && c[1] === b);
-    if (j >= 0) { ep.push(j); eo.push(0); continue; }
     const k = EDGE_COLORS.findIndex((c) => c[0] === b && c[1] === a);
-    if (k >= 0) { ep.push(k); eo.push(1); continue; }
-    badEdge ??= i;
-    ep.push(-1);
-    eo.push(0);
+    if (j < 0 && k < 0) badEdge ??= i;
+    ep.push(j >= 0 ? j : k);
+    eo.push(j < 0 && k >= 0 ? 1 : 0);
   }
 
   return { state: { cp, co, ep, eo }, badCorner, badEdge };

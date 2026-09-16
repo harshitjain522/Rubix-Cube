@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CENTERS, FACES, SOLVED, toCubies, permutationParity } from './facelets';
-import { applyMove, applyMoves, invertAll, normalize, parse, stringifyAll } from './moves';
+import { applyMove, applyMoves, inverse, normalize, parse, scrambledState, stringifyAll } from './moves';
 import { validate } from './validate';
-import { scrambledState } from './scramble';
 
 const sexy = parse("R U R' U'");
 
@@ -19,7 +18,7 @@ describe('moves', () => {
     for (const layer of FACES) {
       for (const amount of [1, 2, 3] as const) {
         const m = { layer, amount };
-        expect(applyMoves(SOLVED, [m, ...invertAll([m])])).toBe(SOLVED);
+        expect(applyMoves(SOLVED, [m, inverse(m)])).toBe(SOLVED);
       }
     }
   });
@@ -101,6 +100,13 @@ describe('validation', () => {
     const s = colored(SOLVED).split('');
     [s[7], s[19]] = [s[19], s[7]];
     expect(validate(s.join(''))?.code).toBe('flip');
+  });
+
+  it('reports an edge that is not a real piece', () => {
+    const s = colored(SOLVED).split('');
+    // UF becomes a second white-red edge and FR becomes green-green.
+    [s[19], s[12]] = [s[12], s[19]];
+    expect(validate(s.join(''))?.code).toBe('edge-set');
   });
 
   it('reports a parity swap', () => {

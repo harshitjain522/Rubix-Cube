@@ -1,52 +1,37 @@
 // The scene and the model must agree about which way a layer turns. A sign
 // error here shows the user a cube turning the wrong way while the solution
-// underneath is still correct, which is the worst kind of wrong. This rebuilds
-// the renderer's pivot-group turn with real three.js math (no WebGL needed)
-// and checks it against the facelet permutation table.
+// underneath is still correct, which is the worst kind of wrong. This drives
+// the renderer's real pivot-group turn (no WebGL needed) and checks it against
+// the facelet permutation table.
 
 import { describe, expect, it } from 'vitest';
 import { Group, Object3D, Vector3 } from 'three';
-import { FACELETS, FACES, LAYER, faceletAt, type V3 } from '../model/facelets';
+import { FACELETS, FACES, faceletAt, type V3 } from '../model/facelets';
 import { permutationFor, type Amount, type Move } from '../model/moves';
-import { isTap } from './renderer';
-
-const AXIS = { U: 'y', D: 'y', R: 'x', L: 'x', F: 'z', B: 'z' } as const;
-const SIGN = { U: -1, D: 1, R: -1, L: 1, F: -1, B: 1 } as const;
+import { beginTurn, isTap } from './renderer';
 
 function buildScene() {
   const root = new Group();
   const cubies = new Map<string, Group>();
-  const markers: { object: Object3D; cubie: Group; facelet: number }[] = [];
-
-  FACELETS.forEach((facelet, index) => {
+  const markers = FACELETS.map((facelet, index) => {
     const key = facelet.pos.join(',');
     let cubie = cubies.get(key);
     if (!cubie) {
       cubie = new Group();
-      cubie.position.set(...(facelet.pos as unknown as [number, number, number]));
+      cubie.position.set(...facelet.pos);
       cubies.set(key, cubie);
       root.add(cubie);
     }
-    const marker = new Object3D();
-    marker.position.set(...(facelet.normal as unknown as [number, number, number]));
-    cubie.add(marker);
-    markers.push({ object: marker, cubie, facelet: index });
+    const object = new Object3D();
+    object.position.set(...facelet.normal);
+    cubie.add(object);
+    return { object, cubie, facelet: index };
   });
   return { root, cubies: [...cubies.values()], markers };
 }
 
 function turn(root: Group, cubies: Group[], move: Move) {
-  const pivot = new Group();
-  root.add(pivot);
-  const axis = AXIS[move.layer];
-  const { plane } = LAYER[move.layer];
-  const angle = SIGN[move.layer] * (Math.PI / 2) * (move.amount === 3 ? -1 : move.amount);
-  const layer = cubies.filter((c) => Math.abs(c.position[axis] - plane) < 0.1);
-  layer.forEach((c) => pivot.attach(c));
-  pivot.rotation[axis] = angle;
-  pivot.updateMatrixWorld(true);
-  layer.forEach((c) => root.attach(c));
-  root.remove(pivot);
+  beginTurn(root, cubies, move).finish();
   root.updateMatrixWorld(true);
 }
 
@@ -72,17 +57,14 @@ describe('layer rotation', () => {
     }
   });
 
-  it('leaves every cubie on a lattice point after a hundred turns', () => {
+  it('leaves every cubie exactly on the grid after a hundred turns', () => {
     const { root, cubies } = buildScene();
     for (let i = 0; i < 100; i++) {
-      turn(root, cubies, {
-        layer: FACES[i % 6],
-        amount: ((i % 3) + 1) as Amount,
-      });
+      turn(root, cubies, { layer: FACES[i % 6], amount: ((i % 3) + 1) as Amount });
     }
     for (const cubie of cubies) {
-      for (const value of [cubie.position.x, cubie.position.y, cubie.position.z]) {
-        expect(Math.abs(value - Math.round(value))).toBeLessThan(1e-6);
+      for (const v of [...cubie.position.toArray(), ...cubie.quaternion.toArray()]) {
+        expect(Math.abs(v * 2 - Math.round(v * 2)) < 1e-9 || Math.abs(Math.abs(v) - Math.SQRT1_2) < 1e-9).toBe(true);
       }
     }
   });

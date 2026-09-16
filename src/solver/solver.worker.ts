@@ -9,38 +9,28 @@ import type { SolverRequest, SolverResponse } from './index';
 
 let tablesReady = false;
 
-function initTables() {
-  if (tablesReady) return;
-  Cube.initSolver();
-  tablesReady = true;
-}
-
 function solveFast(facelets: string): Stage[] {
-  initTables();
-  const solution = Cube.fromString(facelets).solve();
-  const moves = normalize(parse(solution ?? ''));
-  return [
-    {
-      name: 'Solution',
-      goal: 'The shortest route this cube has from here to solved.',
-      look: 'Follow the turns one at a time. There is no pattern to spot — the search found it for you.',
-      moves,
-    },
-  ].filter((s) => s.moves.length > 0);
+  const moves = normalize(parse(Cube.fromString(facelets).solve() ?? ''));
+  if (!moves.length) return [];
+  return [{
+    name: 'Solution',
+    goal: 'The shortest route this cube has from here to solved.',
+    look: 'Follow the turns one at a time. There is no pattern to spot — the search found it for you.',
+    moves,
+  }];
 }
 
-self.addEventListener('message', (e: MessageEvent<SolverRequest>) => {
-  const { id, kind, facelets, mode } = e.data;
-  const reply = (r: Omit<SolverResponse, 'id'>) => self.postMessage({ id, ...r });
+self.addEventListener('message', ({ data: { id, facelets, mode } }: MessageEvent<SolverRequest>) => {
+  let reply: SolverResponse;
   try {
-    if (kind === 'init') {
-      initTables();
-      reply({ ok: true, stages: [] });
-      return;
+    if (!tablesReady && mode !== 'learn') {
+      Cube.initSolver();
+      tablesReady = true;
     }
-    if (!facelets) throw new Error('No cube to solve.');
-    reply({ ok: true, stages: mode === 'learn' ? solveBeginner(facelets) : solveFast(facelets) });
+    const stages = !facelets ? [] : mode === 'learn' ? solveBeginner(facelets) : solveFast(facelets);
+    reply = { id, stages };
   } catch (err) {
-    reply({ ok: false, error: err instanceof Error ? err.message : String(err) });
+    reply = { id, error: err instanceof Error ? err.message : String(err) };
   }
+  self.postMessage(reply);
 });

@@ -13,10 +13,6 @@ export const CUBE_COLORS: Record<Color, string> = {
   B: '#0051BA',
 };
 
-export const COLOR_LABEL: Record<Color, string> = {
-  W: 'white', Y: 'yellow', R: 'red', O: 'orange', G: 'green', B: 'blue',
-};
-
 /** The orientation convention the whole app states once and then relies on. */
 export const FACE_COLOR: Record<Face, Color> = {
   U: 'W', R: 'R', F: 'G', D: 'Y', L: 'O', B: 'B',
@@ -34,16 +30,11 @@ export const FACE_LABEL: Record<Face, string> = {
   U: 'Up', R: 'Right', F: 'Front', D: 'Down', L: 'Left', B: 'Back',
 };
 
+/** The WebGL half of the surface colors; index.css holds the DOM half. */
 export const SURFACE = {
   /** The recessed well the cube sits in. Warm, so it reads as shadow cast by
    *  the tray rather than as a separate dark-mode panel. It stays dark for one
    *  functional reason: white stickers need an edge to hold against. */
   stage: '#26241F',
-  /** The moulded tray everything else sits on. */
-  sheet: '#D5D3CC',
   ink: '#191713',
-  /** 4.8:1 on the tray. */
-  muted: '#5A5750',
-  rule: '#BEBBB2',
-  stageRule: '#3A372F',
 };

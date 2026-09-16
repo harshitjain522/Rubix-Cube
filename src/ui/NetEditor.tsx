@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { CENTERS, FACES, type Color, type Face } from '../model/facelets';
-import { COLOR_FACE, COLOR_LABEL, CUBE_COLORS, FACE_LABEL, PALETTE } from '../design/tokens';
+import { CENTERS, COLOR_NAME, FACES, type Color, type Face } from '../model/facelets';
+import { COLOR_FACE, CUBE_COLORS, FACE_LABEL, PALETTE } from '../design/tokens';
 import { useStore } from '../store';
-
-// Sized by the column it sits in, not by the viewport: the net lives in a
-// panel that is 38% of the window, so vw units overflow it on narrow desktops.
-const CELL = 'aspect-square w-full';
 
 /** Where each face block sits in the unfolded cross. */
 const PLACEMENT: Record<Face, string> = {
@@ -17,6 +13,8 @@ const PLACEMENT: Record<Face, string> = {
   D: 'col-start-2 row-start-3',
 };
 
+// Cells are sized by the column the net sits in, not by the viewport: the
+// panel is 38% of the window, so vw units overflow it on narrow desktops.
 export default function NetEditor({ suspects }: { suspects: Set<number> }) {
   const facelets = useStore((s) => s.input.facelets);
   const selected = useStore((s) => s.input.selectedColor);
@@ -78,14 +76,14 @@ export default function NetEditor({ suspects }: { suspects: Set<number> }) {
                   disabled={isCenter}
                   aria-label={`${FACE_LABEL[face]} face, row ${Math.floor(cell / 3) + 1}, column ${
                     (cell % 3) + 1
-                  }, ${color === '-' ? 'empty' : COLOR_LABEL[color]}${isCenter ? ', center' : ''}`}
+                  }, ${color === '-' ? 'empty' : COLOR_NAME[color]}${isCenter ? ', center' : ''}`}
                   onPointerDown={() => {
                     setPainting(true);
                     paint(index);
                   }}
                   onPointerEnter={() => painting && paint(index)}
                   onKeyDown={(e) => onKeyDown(e, index)}
-                  className={`${CELL} grid place-items-center rounded-[4px] text-[11px] font-bold ${
+                  className={`aspect-square w-full grid place-items-center rounded-[4px] text-[11px] font-bold ${
                     suspects.has(index) ? 'suspect' : ''
                   } ${isCenter ? 'ring-1 ring-ink/40 ring-inset cursor-default' : 'cursor-pointer'}`}
                   style={{
@@ -107,7 +105,7 @@ export default function NetEditor({ suspects }: { suspects: Set<number> }) {
         </div>
       ))}
       <p className="col-span-4 mt-1 max-w-[46ch] text-[13px] leading-5 text-muted">
-        Painting with <span className="font-medium text-ink">{COLOR_LABEL[selected]}</span>. Drag
+        Painting with <span className="font-medium text-ink">{COLOR_NAME[selected]}</span>. Drag
         across cells to fill a run. The centres are already set.
       </p>
     </div>

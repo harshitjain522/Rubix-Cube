@@ -1,4 +1,5 @@
-import { COLOR_LABEL, CUBE_COLORS, PALETTE } from '../design/tokens';
+import { COLOR_NAME } from '../model/facelets';
+import { CUBE_COLORS, PALETTE } from '../design/tokens';
 import { useStore } from '../store';
 
 export default function Palette() {
@@ -17,7 +18,7 @@ export default function Palette() {
               type="button"
               role="radio"
               aria-checked={active}
-              aria-label={`${COLOR_LABEL[color]}, ${placed} of 9 placed. Shortcut ${i + 1}.`}
+              aria-label={`${COLOR_NAME[color]}, ${placed} of 9 placed. Shortcut ${i + 1}.`}
               onClick={() => selectColor(color)}
               className={`rounded-full transition-none ${
                 active ? 'h-11 w-11 ring-2 ring-ink ring-offset-2 ring-offset-sheet' : 'h-9 w-9'

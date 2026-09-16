@@ -7,10 +7,9 @@
 // twenty lines instead of mirroring every algorithm by hand.
 
 import {
-  CORNER_NAMES, EDGE_NAMES, FACELETS, SOLVED, faceletAt, toCubies,
-  type Face,
+  CORNER_NAMES, EDGE_NAMES, FACELETS, FACES, SOLVED, faceletAt, toCubies, type Face,
 } from '../model/facelets';
-import { applyMoves, normalize, parse, type Move } from '../model/moves';
+import { applyMove, applyMoves, normalize, parse, type Move } from '../model/moves';
 
 // ponytail: stages 1 and 5-7 search over whole algorithms instead of matching a
 // hand-built case table (7 OLL + 21 PLL cases). That is a few hundred lines
@@ -56,8 +55,8 @@ const LEFT: Record<string, Face> = { F: 'L', L: 'B', B: 'R', R: 'F' };
 
 const U_TURNS: Move[][] = [[], parse('U'), parse('U2'), parse("U'")];
 
-const edgeIndex = (name: string) => EDGE_NAMES.indexOf(name as never);
-const cornerIndex = (name: string) => CORNER_NAMES.indexOf(name as never);
+const edgeIndex = (name: string) => EDGE_NAMES.indexOf(name);
+const cornerIndex = (name: string) => CORNER_NAMES.indexOf(name);
 
 /** Where every piece currently sits, and how it is oriented. */
 function locate(s: string) {
@@ -126,16 +125,15 @@ function searchTurns(
   goal: (s: string) => boolean,
   maxDepth: number,
 ): Move[] | null {
-  const layers: Face[] = ['U', 'R', 'F', 'D', 'L', 'B'];
   const path: Move[] = [];
   const dfs = (s: string, depth: number, last: Face | null): boolean => {
     if (goal(s)) return true;
     if (depth === 0) return false;
-    for (const layer of layers) {
+    for (const layer of FACES) {
       if (layer === last) continue;
       let next = s;
       for (const amount of [1, 2, 3] as const) {
-        next = applyMoves(next, [{ layer, amount: 1 }]);
+        next = applyMove(next, { layer, amount: 1 });
         path.push({ layer, amount });
         if (dfs(next, depth - 1, layer)) return true;
         path.pop();

@@ -58,6 +58,7 @@ export default function Transport() {
   }, [moves.length, seek, step, setPlaying]);
 
   const done = index >= moves.length;
+  const count = `${Math.min(index + 1, moves.length)} of ${moves.length}`;
 
   return (
     // Sticky on a phone so the controls stay under your thumb while the move
@@ -89,13 +90,13 @@ export default function Transport() {
         {/* Count and speed ride along with the buttons so a phone gets two
             rows here, not three: the cube needs the vertical space more. */}
         <p className="ml-auto text-[14px] tabular-nums text-muted lg:hidden">
-          {Math.min(index + (done ? 0 : 1), moves.length)} of {moves.length}
+          {count}
         </p>
         <SpeedControl speed={speed} setSpeed={setSpeed} />
       </div>
 
       <p className="hidden text-[14px] tabular-nums text-muted lg:order-3 lg:block">
-        {Math.min(index + (done ? 0 : 1), moves.length)} of {moves.length}
+        {count}
       </p>
 
       <p className="sr-only" role="status" aria-live="polite">

@@ -4,7 +4,6 @@
   /* The recess the cube sits in, and the moulded tray around it. Kept in step
      with design/tokens.ts, which is what WebGL reads. */
   --color-stage: #26241f;
-  --color-stage-rule: #3a372f;
   --color-sheet: #d5d3cc;
   --color-ink: #191713;
   --color-muted: #5a5750;
