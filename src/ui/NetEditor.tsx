@@ -3,7 +3,9 @@ import { CENTERS, FACES, type Color, type Face } from '../model/facelets';
 import { COLOR_FACE, COLOR_LABEL, CUBE_COLORS, FACE_LABEL, PALETTE } from '../design/tokens';
 import { useStore } from '../store';
 
-const CELL = 'h-[clamp(22px,7vw,34px)] w-[clamp(22px,7vw,34px)]';
+// Sized by the column it sits in, not by the viewport: the net lives in a
+// panel that is 38% of the window, so vw units overflow it on narrow desktops.
+const CELL = 'aspect-square w-full';
 
 /** Where each face block sits in the unfolded cross. */
 const PLACEMENT: Record<Face, string> = {
@@ -55,16 +57,14 @@ export default function NetEditor({ suspects }: { suspects: Set<number> }) {
   return (
     <div
       ref={gridRef}
-      className="grid w-fit grid-cols-4 gap-x-4 gap-y-3"
+      className="grid w-full max-w-[472px] grid-cols-4 gap-x-4 gap-y-3"
       role="group"
       aria-label="Cube net"
       style={{ touchAction: 'none' }}
     >
       {FACES.map((face, faceIndex) => (
         <div key={face} className={PLACEMENT[face]}>
-          <div className="mb-1 text-[13px] font-medium text-muted">
-            {FACE_LABEL[face]} — {COLOR_LABEL[facelets[CENTERS[faceIndex]] as Color]}
-          </div>
+          <div className="mb-1.5 text-[13px] font-medium text-muted">{FACE_LABEL[face]}</div>
           <div className="grid grid-cols-3 gap-[2px]" role="grid">
             {Array.from({ length: 9 }, (_, cell) => {
               const index = faceIndex * 9 + cell;
@@ -85,13 +85,17 @@ export default function NetEditor({ suspects }: { suspects: Set<number> }) {
                   }}
                   onPointerEnter={() => painting && paint(index)}
                   onKeyDown={(e) => onKeyDown(e, index)}
-                  className={`${CELL} grid place-items-center rounded-[3px] font-mono text-[11px] font-bold ${
+                  className={`${CELL} grid place-items-center rounded-[4px] text-[11px] font-bold ${
                     suspects.has(index) ? 'suspect' : ''
                   } ${isCenter ? 'ring-1 ring-ink/40 ring-inset cursor-default' : 'cursor-pointer'}`}
                   style={{
-                    background: color === '-' ? 'transparent' : CUBE_COLORS[color],
+                    background: color === '-' ? 'rgb(0 0 0 / 0.06)' : CUBE_COLORS[color],
+                    // Empty cells are sunk into the tray; painted ones sit
+                    // proud of it, the way a sticker sits on plastic.
                     boxShadow:
-                      color === '-' ? `inset 0 0 0 1px var(--color-rule)` : undefined,
+                      color === '-'
+                        ? 'inset 0 1px 2px rgb(0 0 0 / 0.2)'
+                        : '0 1px 0 rgb(255 255 255 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.14)',
                     color: color === 'W' || color === 'Y' ? '#15171B' : '#FFFFFF',
                   }}
                 >
@@ -102,9 +106,9 @@ export default function NetEditor({ suspects }: { suspects: Set<number> }) {
           </div>
         </div>
       ))}
-      <p className="col-span-4 max-w-[46ch] text-[13px] text-muted">
+      <p className="col-span-4 mt-1 max-w-[46ch] text-[13px] leading-5 text-muted">
         Painting with <span className="font-medium text-ink">{COLOR_LABEL[selected]}</span>. Drag
-        across cells to fill a run. Centers are fixed.
+        across cells to fill a run. The centres are already set.
       </p>
     </div>
   );

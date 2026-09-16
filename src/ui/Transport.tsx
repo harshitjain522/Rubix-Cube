@@ -7,22 +7,22 @@ const SPEEDS = [0.25, 0.5, 1, 2, 4];
 
 /**
  * The move you are on, at the size you can read from arm's length with a cube
- * in your hands. On a phone this is the largest thing on the screen, sitting
- * directly under the cube; on a desktop it shares the transport row.
+ * in your hands. On a phone this is the largest thing below the cube; on a
+ * desktop it shares the transport row.
  */
-export function CurrentMove({ className = '' }: { className?: string }) {
+function CurrentMove() {
   const moves = useStore((s) => s.solve.moves);
   const index = useStore((s) => s.playback.index);
   const move = index >= moves.length ? null : moves[index];
 
   return (
-    <div className={`flex min-w-0 items-baseline gap-x-4 gap-y-1 ${className}`}>
+    <div className="flex min-w-0 items-baseline gap-x-4 gap-y-1 lg:order-2 lg:flex-1">
       {move ? (
         <>
           <span className="font-mono text-[44px] leading-none font-bold tracking-[-0.06em]">
             {stringify(move)}
           </span>
-          <span className="text-[16px] leading-6 text-[#B9BEC6]">{describe(move)}</span>
+          <span className="text-[16px] leading-6 text-muted">{describe(move)}</span>
         </>
       ) : (
         <span className="text-[34px] leading-none font-semibold">Solved.</span>
@@ -60,52 +60,68 @@ export default function Transport() {
   const done = index >= moves.length;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-stage-rule bg-stage px-5 py-3 text-[#EDEEEA]">
-      <div className="flex items-center gap-1">
-        <Button label="Restart" onClick={() => seek(0)} disabled={index === 0}>
-          <Icon shape="restart" />
-        </Button>
-        <Button label="Step back" onClick={() => step(-1)} disabled={index === 0}>
-          <Icon shape="stepBack" />
-        </Button>
-        <Button
-          label={playing ? 'Pause' : 'Play'}
-          onClick={() => setPlaying(!playing)}
-          disabled={done}
-          wide
-        >
-          <Icon shape={playing ? 'pause' : 'play'} />
-        </Button>
-        <Button label="Step forward" onClick={() => step(1)} disabled={done}>
-          <Icon shape="stepForward" />
-        </Button>
+    // Sticky on a phone so the controls stay under your thumb while the move
+    // list scrolls; just the last row of the tray on a desktop.
+    <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 bg-sheet px-4 pt-3 pb-4 lg:static lg:mx-0 lg:flex-row lg:items-center lg:gap-6 lg:p-0">
+      <CurrentMove />
+
+      <div className="flex items-center gap-3 lg:order-1">
+        <div className="flex items-center gap-1">
+          <Button label="Restart" onClick={() => seek(0)} disabled={index === 0}>
+            <Icon shape="restart" />
+          </Button>
+          <Button label="Step back" onClick={() => step(-1)} disabled={index === 0}>
+            <Icon shape="stepBack" />
+          </Button>
+          <Button
+            label={playing ? 'Pause' : 'Play'}
+            onClick={() => setPlaying(!playing)}
+            disabled={done}
+            primary
+          >
+            <Icon shape={playing ? 'pause' : 'play'} />
+          </Button>
+          <Button label="Step forward" onClick={() => step(1)} disabled={done}>
+            <Icon shape="stepForward" />
+          </Button>
+        </div>
+
+        {/* Count and speed ride along with the buttons so a phone gets two
+            rows here, not three: the cube needs the vertical space more. */}
+        <p className="ml-auto text-[14px] tabular-nums text-muted lg:hidden">
+          {Math.min(index + (done ? 0 : 1), moves.length)} of {moves.length}
+        </p>
+        <SpeedControl speed={speed} setSpeed={setSpeed} />
       </div>
 
-      <CurrentMove className="hidden flex-1 lg:flex" />
-
-      <label className="flex items-center gap-2 text-[13px] text-[#B9BEC6]">
-        Speed
-        <select
-          value={speed}
-          onChange={(e) => setSpeed(Number(e.target.value))}
-          className="rounded-sm border border-stage-rule bg-transparent px-2 py-1 font-mono text-[13px]"
-        >
-          {SPEEDS.map((s) => (
-            <option key={s} value={s} className="text-ink">
-              {s}x
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <p className="font-mono text-[13px] tabular-nums text-[#B9BEC6]">
-        {Math.min(index + (done ? 0 : 1), moves.length)} / {moves.length}
+      <p className="hidden text-[14px] tabular-nums text-muted lg:order-3 lg:block">
+        {Math.min(index + (done ? 0 : 1), moves.length)} of {moves.length}
       </p>
 
       <p className="sr-only" role="status" aria-live="polite">
         {announce(moves, index)}
       </p>
     </div>
+  );
+}
+
+function SpeedControl({ speed, setSpeed }: { speed: number; setSpeed: (n: number) => void }) {
+  return (
+    <label className="flex items-center gap-2 text-[14px] text-muted lg:order-3">
+      <span className="hidden lg:inline">Speed</span>
+      <span className="sr-only lg:hidden">Speed</span>
+      <select
+        value={speed}
+        onChange={(e) => setSpeed(Number(e.target.value))}
+        className="slot h-9 px-2 text-[14px] text-ink"
+      >
+        {SPEEDS.map((s) => (
+          <option key={s} value={s}>
+            {s}x
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -133,13 +149,13 @@ function Button({
   label,
   onClick,
   disabled,
-  wide,
+  primary,
   children,
 }: {
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  wide?: boolean;
+  primary?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -149,8 +165,8 @@ function Button({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`grid h-11 place-items-center rounded-sm disabled:opacity-30 ${
-        wide ? 'w-16 bg-[#EDEEEA] text-stage' : 'w-11 hover:bg-stage-rule'
+      className={`grid h-11 place-items-center rounded-full disabled:opacity-30 ${
+        primary ? 'w-16 bg-ink text-sheet' : 'key w-11 text-ink'
       }`}
     >
       {children}

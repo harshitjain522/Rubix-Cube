@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { Group, Object3D, Vector3 } from 'three';
 import { FACELETS, FACES, LAYER, faceletAt, type V3 } from '../model/facelets';
 import { permutationFor, type Amount, type Move } from '../model/moves';
+import { isTap } from './renderer';
 
 const AXIS = { U: 'y', D: 'y', R: 'x', L: 'x', F: 'z', B: 'z' } as const;
 const SIGN = { U: -1, D: 1, R: -1, L: 1, F: -1, B: 1 } as const;
@@ -84,5 +85,24 @@ describe('layer rotation', () => {
         expect(Math.abs(value - Math.round(value))).toBeLessThan(1e-6);
       }
     }
+  });
+});
+
+// Orbiting the cube must never paint a sticker, because painting is the only
+// thing that rewrites the shareable URL. If this heuristic goes, a link you
+// copied starts changing under you every time you spin the cube to look at it.
+describe('picking versus orbiting', () => {
+  const from = { x: 200, y: 200 };
+
+  it('picks a sticker only when the pointer stayed put', () => {
+    expect(isTap(from, { x: 200, y: 200 })).toBe(true);
+    expect(isTap(from, { x: 203, y: 201 })).toBe(true);
+    expect(isTap(from, { x: 204, y: 203 })).toBe(true); // 5px away, still a tap
+  });
+
+  it('reads anything further as an orbit', () => {
+    expect(isTap(from, { x: 206, y: 200 })).toBe(false);
+    expect(isTap(from, { x: 200, y: 260 })).toBe(false);
+    expect(isTap(from, { x: 140, y: 140 })).toBe(false);
   });
 });

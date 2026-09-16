@@ -35,10 +35,15 @@ export const FACE_LABEL: Record<Face, string> = {
 };
 
 export const SURFACE = {
-  stage: '#1B1D21',
-  sheet: '#EDEEEA',
-  ink: '#15171B',
-  muted: '#6A7078',
-  rule: '#C8CAC5',
-  stageRule: '#34383E',
+  /** The recessed well the cube sits in. Warm, so it reads as shadow cast by
+   *  the tray rather than as a separate dark-mode panel. It stays dark for one
+   *  functional reason: white stickers need an edge to hold against. */
+  stage: '#26241F',
+  /** The moulded tray everything else sits on. */
+  sheet: '#D5D3CC',
+  ink: '#191713',
+  /** 4.8:1 on the tray. */
+  muted: '#5A5750',
+  rule: '#BEBBB2',
+  stageRule: '#3A372F',
 };

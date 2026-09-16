@@ -1,14 +1,16 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-stage: #1b1d21;
-  --color-stage-rule: #34383e;
-  --color-sheet: #edeeea;
-  --color-ink: #15171b;
-  --color-muted: #6a7078;
-  --color-rule: #c8cac5;
+  /* The recess the cube sits in, and the moulded tray around it. Kept in step
+     with design/tokens.ts, which is what WebGL reads. */
+  --color-stage: #26241f;
+  --color-stage-rule: #3a372f;
+  --color-sheet: #d5d3cc;
+  --color-ink: #191713;
+  --color-muted: #5a5750;
+  --color-rule: #bebbb2;
 
-  --font-sans: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Familjen Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 }
 
@@ -20,16 +22,46 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-stage);
+  background: var(--color-sheet);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* One focus treatment everywhere, legible on paper and on the stage. */
-:where(button, [tabindex], input, select, a):focus-visible {
+/* One focus treatment everywhere, legible on the tray and in the well. */
+:where(button, [tabindex], input, select, a, summary):focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
+}
+
+/* The only visual device in the interface: one thing is sunk into the tray.
+   Everything else is flat on it, which is what keeps the six cube colors the
+   loudest thing on screen. */
+.well {
+  background: var(--color-stage);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 2px 5px rgb(0 0 0 / 0.5),
+    0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+/* Two shallower treatments, and the difference between them is information:
+   a .key is a moulded button standing proud of the tray, a .slot is a hole you
+   put something into — a field, a channel, an unpainted sticker. Never mix
+   them up; the affordance is the whole point of having both. */
+.key {
+  background: rgb(255 255 255 / 0.3);
+  box-shadow:
+    0 1px 1.5px rgb(0 0 0 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.6);
+}
+
+.slot {
+  background: rgb(0 0 0 / 0.05);
+  border-radius: 7px;
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.16),
+    0 1px 0 rgb(255 255 255 / 0.45);
 }
 
 @keyframes suspect {
